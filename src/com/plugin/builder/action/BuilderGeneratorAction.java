@@ -1,15 +1,20 @@
-package com.plugin.builder;
+package com.plugin.builder.action;
 
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.DataKeys;
-import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.util.PsiTreeUtil;
+import com.plugin.builder.command.BuilderGenerationCommand;
 
+/**
+ * Action class to store BuilderGenerating related operations.
+ *
+ * @author Antal_Kajzer
+ */
 public class BuilderGeneratorAction extends AnAction {
 
     @Override
@@ -25,13 +30,7 @@ public class BuilderGeneratorAction extends AnAction {
         final PsiElement element = file.findElementAt(offset);
         final PsiClass clazz = PsiTreeUtil.getParentOfType(element, PsiClass.class);
 
-        new WriteCommandAction.Simple(clazz.getProject(), clazz.getContainingFile()) {
-            @Override
-            protected void run() {
-                final BuilderCodeGenerator generator = new BuilderCodeGenerator(clazz);
-                generator.generateBuilder();
-            }
-        }.execute();
+        BuilderGenerationCommand.createInstance(clazz, file.getProject(), file).execute();
     }
 
     private boolean isEditorOrFileNull(PsiFile file, Editor editor) {
