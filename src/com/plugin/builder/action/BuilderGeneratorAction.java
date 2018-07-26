@@ -1,4 +1,4 @@
-package net.objecthunter.idea;
+package com.plugin.builder;
 
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
@@ -10,14 +10,14 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.util.PsiTreeUtil;
 
-public class GenerateBuilderAction extends AnAction {
+public class BuilderGeneratorAction extends AnAction {
 
     @Override
     public void actionPerformed(AnActionEvent anActionEvent) {
         final PsiFile file = anActionEvent.getData(DataKeys.PSI_FILE);
         final Editor editor = anActionEvent.getData(DataKeys.EDITOR);
 
-        if (file == null || editor == null) {
+        if (isEditorOrFileNull(file, editor)) {
             return;
         }
 
@@ -27,10 +27,14 @@ public class GenerateBuilderAction extends AnAction {
 
         new WriteCommandAction.Simple(clazz.getProject(), clazz.getContainingFile()) {
             @Override
-            protected void run() throws Throwable {
+            protected void run() {
                 final BuilderCodeGenerator generator = new BuilderCodeGenerator(clazz);
                 generator.generateBuilder();
             }
         }.execute();
+    }
+
+    private boolean isEditorOrFileNull(PsiFile file, Editor editor) {
+        return file == null || editor == null;
     }
 }

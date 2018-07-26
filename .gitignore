@@ -1,1 +1,12 @@
-out/
+*.class
+
+*.war
+*.ear
+
+/.gradle/
+/.settings/
+/.idea/
+/bin/
+/build/
+/out/
+/target/

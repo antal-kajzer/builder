@@ -1,4 +1,4 @@
-package net.objecthunter.idea;
+package com.plugin.builder;
 
 import com.intellij.psi.*;
 import com.intellij.psi.javadoc.PsiDocComment;
@@ -6,20 +6,13 @@ import com.intellij.psi.javadoc.PsiDocComment;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.jetbrains.annotations.NotNull;
+
 public class BuilderCodeGenerator {
-
-    /* Holds the class that the builder will be added to */
     private final PsiClass clazz;
-
-    /* The IntelliJ Idea ElementFactory for creating new classes and such */
     private final PsiElementFactory elementFactory;
-
-    /* Holds the fields for which builder methods will be generated */
     private final List<PsiField> fields;
-
-    /* Holds the name for the static inner builder class */
     private static final String builderClassName = "Builder";
-
     private static final String builderParamName = builderClassName.toLowerCase();
 
     public BuilderCodeGenerator(final PsiClass clazz) {
@@ -41,9 +34,7 @@ public class BuilderCodeGenerator {
     public void removeBuilder() {
         for (final PsiClass innerClass : clazz.getAllInnerClasses()) {
             if (innerClass.getName().equals(builderClassName)) {
-                /* delete existing constructors for this builder */
                 this.removeConstructor();
-                /* delete the builder */
                 innerClass.delete();
                 return;
             }
@@ -69,19 +60,13 @@ public class BuilderCodeGenerator {
     }
 
     public void generateBuilder() {
-        /* remove any existing builder class before generating the new code */
         this.removeBuilder();
-
-        /* create a new builder class that will be added to the parent class */
         final PsiClass builderClass = createBuilderClass();
-
-        /* add Javadoc to the buidler class */
         builderClass.addBefore(createBuilderJavaDoc(), builderClass.getFirstChild());
 
         final PsiMethod constructor = createConstructor(builderClass);
         this.clazz.add(constructor);
 
-        /* add Javadoc to the builder methods */
         for (final PsiMethod method : builderClass.getMethods()) {
             method.addBefore(createMethodJavaDoc(method), method.getFirstChild());
         }
@@ -122,7 +107,7 @@ public class BuilderCodeGenerator {
         comment.append("/**\n")
                 .append(" * Builder for instances of type {@link ")
                 .append(this.clazz.getQualifiedName())
-                .append("}")
+                .append("}.")
                 .append("\n */\n");
         return elementFactory.createDocCommentFromText(comment.toString());
     }
@@ -132,7 +117,7 @@ public class BuilderCodeGenerator {
         comment.append("/**\n")
                 .append(" * Constructor for instances of type {@link ")
                 .append(this.clazz.getQualifiedName())
-                .append("} using the Builder implementation")
+                .append("}.")
                 .append("\n */\n");
         return elementFactory.createDocCommentFromText(comment.toString());
     }
@@ -146,11 +131,18 @@ public class BuilderCodeGenerator {
                     .append("}\n*/");
         }else {
             comment.append("/**\n")
-                    .append(" * Set the value of the field ")
-                    .append(method.getName())
-                    .append(" of the target instance of type {@link ")
-                    .append(this.clazz.getQualifiedName())
-                    .append("}\n */\n");
+                    .append(" * Sets ")
+                    .append(method.getParameterList().getParameters()[0].getName())
+                    .append(".")
+                    .append("\n")
+                    .append(" * @param ")
+                    .append(method.getParameterList().getParameters()[0].getName())
+                    .append(" ")
+                    .append(method.getParameterList().getParameters()[0].getName())
+                    .append("\n")
+                    .append(" *\n")
+                    .append(" * @return this builder")
+                    .append("\n */\n");
         }
         return elementFactory.createDocCommentFromText(comment.toString());
 
@@ -169,7 +161,7 @@ public class BuilderCodeGenerator {
     private List<PsiMethod> createBuilderMethods(final PsiType builderType) {
         final List<PsiMethod> methods = new ArrayList<>();
         for (final PsiField field : fields) {
-            final PsiMethod method = elementFactory.createMethod(field.getName(), builderType);
+            final PsiMethod method = elementFactory.createMethod("with" + createMethodName(field), builderType);
             final PsiParameter param = elementFactory.createParameter(field.getName(), field.getType());
             param.getModifierList().setModifierProperty(PsiModifier.FINAL, true);
             method.getParameterList().add(param);
@@ -182,6 +174,11 @@ public class BuilderCodeGenerator {
         buildMethod.getBody().add(elementFactory.createStatementFromText("return new " + clazz.getName() + "(this);", buildMethod));
         methods.add(buildMethod);
         return methods;
+    }
+
+    @NotNull
+    private String createMethodName(PsiField field) {
+        return field.getName().substring(0, 1).toUpperCase() + field.getName().substring(1, field.getName().length());
     }
 
 }
